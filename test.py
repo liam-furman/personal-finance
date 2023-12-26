@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from helper import generate_future_economy_historical
+import helper
 
 # TODO: Allow random seed to be provided
 
@@ -23,37 +23,42 @@ historical_economy = pd.DataFrame({
     # random returns + inflation for testing
     'equity_returns': np.random.uniform(-0.12, 0.12, size = n_historical_periods),
     'inflation': np.random.uniform(0, 0.085, size = n_historical_periods),
-    # For testing assuming salary increase is the same as inflation
-    'salary_increase': np.random.uniform(0, 0.085, size = n_historical_periods),
 })
-
-# TODO: investigate whether this can be vectorized
-for trial in range(0, N_TRIALS):
-    print("Trial:", trial)
-    future = generate_future_economy_historical(historical_economy, PERIODS_TO_PREDICT)
-    # TODO: Be clearer around balances etc at start vs end period
-    for period in range(0, PERIODS_TO_PREDICT):
-        future['trial'] = trial
-        # TODO: Make sure period is an int
-        future.loc[period, ['period']] = period
-        if period == 0:
-            future.loc[period, ['equity_balance']] = STARTING_EQUITY_BALANCE
-            future.loc[period, ['expenses']] = STARTING_MONTHLY_EXPENSES
-            future.loc[period, ['net_salary']] = STARTING_NET_SALARY
-        else:
-            previous_period = period - 1  
-            future.loc[period, ['expenses']] = future.expenses[previous_period] * (1 + future.inflation[previous_period])
-            if period < PERIODS_TO_RETIREMENT:
-                future.loc[period, ['net_salary']] = future.net_salary[previous_period] * (1 + future.salary_increase[previous_period])
-            else:
-                future.loc[period, ['net_salary']] = 0
-            future.loc[period, ['equity_balance']] = future.equity_balance[previous_period] * (1 + future.equity_returns[previous_period]) + future.net_salary[previous_period] - future.expenses[previous_period]
-    if trial == 0:
-        futures = future
-    else:
-        futures = pd.concat([futures, future])
-futures['failed'] = future.equity_balance < future.expenses
+historical_economy['salary_increase'] = historical_economy.inflation
 
 pd.set_option('display.max_rows', 5000)
-print(futures)
+future_economies = helper.generate_future_economy_stationary_bootstrap(historical_economy, PERIODS_TO_PREDICT)
+for data in future_economies.bootstrap(N_TRIALS):
+    print(data[1]['economy'])
+    print(len(data[1]['economy']))
+
+# # TODO: investigate whether this can be vectorized
+# for trial in range(0, N_TRIALS):
+    # print("Trial:", trial)
+    # future = generate_future_economy_historical(historical_economy, PERIODS_TO_PREDICT)
+    # # TODO: Be clearer around balances etc at start vs end period
+    # for period in range(0, PERIODS_TO_PREDICT):
+        # future['trial'] = trial
+        # # TODO: Make sure period is an int
+        # future.loc[period, ['period']] = period
+        # if period == 0:
+            # future.loc[period, ['equity_balance']] = STARTING_EQUITY_BALANCE
+            # future.loc[period, ['expenses']] = STARTING_MONTHLY_EXPENSES
+            # future.loc[period, ['net_salary']] = STARTING_NET_SALARY
+        # else:
+            # previous_period = period - 1  
+            # future.loc[period, ['expenses']] = future.expenses[previous_period] * (1 + future.inflation[previous_period])
+            # if period < PERIODS_TO_RETIREMENT:
+                # future.loc[period, ['net_salary']] = future.net_salary[previous_period] * (1 + future.salary_increase[previous_period])
+            # else:
+                # future.loc[period, ['net_salary']] = 0
+            # future.loc[period, ['equity_balance']] = future.equity_balance[previous_period] * (1 + future.equity_returns[previous_period]) + future.net_salary[previous_period] - future.expenses[previous_period]
+    # if trial == 0:
+        # futures = future
+    # else:
+        # futures = pd.concat([futures, future])
+# futures['failed'] = future.equity_balance < future.expenses
+
+# pd.set_option('display.max_rows', 5000)
+# print(futures)
 
