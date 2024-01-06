@@ -13,7 +13,7 @@ N_REPS = 3
 N_SIM_PERIODS = 30*12
 TIME_STEP = 1.0 / 12
 
-# Initial values
+# Initial values for testing
 STARTING_EQUITY = 1e5
 STARTING_EXPENSES = 1E2
 STARTING_NET_SALARY = 3E3
